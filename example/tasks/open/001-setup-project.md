@@ -1,6 +1,5 @@
 ---
 priority: high
-status: open
 model: opus
 created: 2026-03-03
 ---

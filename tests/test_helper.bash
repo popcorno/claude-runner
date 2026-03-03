@@ -10,6 +10,7 @@ load_script() {
   TASKS_DIR="./tasks/open"
   DONE_DIR="./tasks/done"
   FAILED_DIR="./tasks/failed"
+  BACKLOG_DIR="./tasks/backlog"
   DONE_STRATEGY="move"
   DEFAULT_MODEL="opus"
   TEST_COMMAND="npm test"

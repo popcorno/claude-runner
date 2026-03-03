@@ -16,6 +16,7 @@ teardown() {
   "tasksDir": "./my-tasks",
   "doneDir": "./my-done",
   "failedDir": "./my-failed",
+  "backlogDir": "./my-backlog",
   "defaultModel": "sonnet",
   "testCommand": "make test",
   "maxRetries": 5,
@@ -33,6 +34,7 @@ JSON
   [ "$TASKS_DIR" = "./my-tasks" ]
   [ "$DONE_DIR" = "./my-done" ]
   [ "$FAILED_DIR" = "./my-failed" ]
+  [ "$BACKLOG_DIR" = "./my-backlog" ]
   [ "$DEFAULT_MODEL" = "sonnet" ]
   [ "$TEST_COMMAND" = "make test" ]
   [ "$MAX_RETRIES" = "5" ]
@@ -78,6 +80,20 @@ JSON
   [ "$DEFAULT_MODEL" = "opus" ]
   [ "$MAX_RETRIES" = "2" ]
   [ "$DONE_STRATEGY" = "move" ]
+}
+
+@test "load_config: backlogDir is loaded from config" {
+  cat > claude-runner.config.json <<'JSON'
+{
+  "backlogDir": "./my-backlog"
+}
+JSON
+
+  load_config
+
+  [ "$BACKLOG_DIR" = "./my-backlog" ]
+  # Other values remain at defaults
+  [ "$TASKS_DIR" = "./tasks/open" ]
 }
 
 @test "load_config: partial config only overrides specified keys" {

@@ -6,7 +6,7 @@ set -euo pipefail
 #  task execution via Claude Code
 # ═══════════════════════════════════════
 
-VERSION="1.1.0"
+VERSION="1.2.0"
 
 # ── Color setup ──────────────────────────────────────────────
 if [[ -t 1 ]] && command -v tput &>/dev/null && [[ $(tput colors 2>/dev/null || echo 0) -ge 8 ]]; then
@@ -367,6 +367,7 @@ set_frontmatter_status() {
 
   local tmp
   tmp=$(mktemp)
+  trap "rm -f '$tmp'" RETURN
 
   # Case 2: file has frontmatter (starts with ---) but no status field
   if head -1 "$file" | grep -q '^---$'; then

@@ -1,8 +1,6 @@
 ---
 priority: medium
-status: open
 model: sonnet
-skip-tests: false
 created: 2026-03-03
 ---
 
