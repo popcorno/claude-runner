@@ -146,18 +146,20 @@ load_config() {
 
   local val
 
-  val=$(jq -r '.tasksDir // empty' "$config_file" 2>/dev/null) && [[ -n "$val" ]] && TASKS_DIR="$val"
-  val=$(jq -r '.doneDir // empty' "$config_file" 2>/dev/null) && [[ -n "$val" ]] && DONE_DIR="$val"
-  val=$(jq -r '.failedDir // empty' "$config_file" 2>/dev/null) && [[ -n "$val" ]] && FAILED_DIR="$val"
-  val=$(jq -r '.doneStrategy // empty' "$config_file" 2>/dev/null) && [[ -n "$val" ]] && DONE_STRATEGY="$val"
-  val=$(jq -r '.defaultModel // empty' "$config_file" 2>/dev/null) && [[ -n "$val" ]] && DEFAULT_MODEL="$val"
-  val=$(jq -r '.testCommand // empty' "$config_file" 2>/dev/null) && [[ -n "$val" ]] && TEST_COMMAND="$val"
-  val=$(jq -r '.autoCommit // empty' "$config_file" 2>/dev/null) && [[ -n "$val" ]] && AUTO_COMMIT="$val"
-  val=$(jq -r '.commitPrefix // empty' "$config_file" 2>/dev/null) && [[ -n "$val" ]] && COMMIT_PREFIX="$val"
-  val=$(jq -r '.maxRetries // empty' "$config_file" 2>/dev/null) && [[ -n "$val" ]] && MAX_RETRIES="$val"
-  val=$(jq -r '.systemPrompt // empty' "$config_file" 2>/dev/null) && [[ -n "$val" ]] && SYSTEM_PROMPT="$val"
-  val=$(jq -r '.stopOnError // empty' "$config_file" 2>/dev/null) && [[ -n "$val" ]] && STOP_ON_ERROR="$val"
-  val=$(jq -r '.allowDangerousMode // empty' "$config_file" 2>/dev/null) && [[ -n "$val" ]] && DANGEROUS_MODE="$val"
+  val=$(jq -r '.tasksDir | values' "$config_file" 2>/dev/null) && [[ -n "$val" ]] && TASKS_DIR="$val"
+  val=$(jq -r '.doneDir | values' "$config_file" 2>/dev/null) && [[ -n "$val" ]] && DONE_DIR="$val"
+  val=$(jq -r '.failedDir | values' "$config_file" 2>/dev/null) && [[ -n "$val" ]] && FAILED_DIR="$val"
+  val=$(jq -r '.doneStrategy | values' "$config_file" 2>/dev/null) && [[ -n "$val" ]] && DONE_STRATEGY="$val"
+  val=$(jq -r '.defaultModel | values' "$config_file" 2>/dev/null) && [[ -n "$val" ]] && DEFAULT_MODEL="$val"
+  val=$(jq -r '.testCommand | values' "$config_file" 2>/dev/null) && [[ -n "$val" ]] && TEST_COMMAND="$val"
+  val=$(jq -r '.autoCommit | values' "$config_file" 2>/dev/null) && [[ -n "$val" ]] && AUTO_COMMIT="$val"
+  val=$(jq -r '.commitPrefix | values' "$config_file" 2>/dev/null) && [[ -n "$val" ]] && COMMIT_PREFIX="$val"
+  val=$(jq -r '.maxRetries | values' "$config_file" 2>/dev/null) && [[ -n "$val" ]] && MAX_RETRIES="$val"
+  val=$(jq -r '.systemPrompt | values' "$config_file" 2>/dev/null) && [[ -n "$val" ]] && SYSTEM_PROMPT="$val"
+  val=$(jq -r '.stopOnError | values' "$config_file" 2>/dev/null) && [[ -n "$val" ]] && STOP_ON_ERROR="$val"
+  val=$(jq -r '.allowDangerousMode | values' "$config_file" 2>/dev/null) && [[ -n "$val" ]] && DANGEROUS_MODE="$val"
+
+  return 0
 }
 
 # ── CLI argument parsing ─────────────────────────────────────
@@ -188,7 +190,9 @@ parse_args() {
   done
 
   # CLI tasks dir overrides config
-  [[ -n "$CLI_TASKS_DIR" ]] && TASKS_DIR="$CLI_TASKS_DIR"
+  if [[ -n "$CLI_TASKS_DIR" ]]; then
+    TASKS_DIR="$CLI_TASKS_DIR"
+  fi
 }
 
 # ── Prerequisite checks ─────────────────────────────────────
@@ -643,7 +647,9 @@ main() {
   load_config
 
   # Re-apply CLI overrides after config load
-  [[ -n "$CLI_TASKS_DIR" ]] && TASKS_DIR="$CLI_TASKS_DIR"
+  if [[ -n "$CLI_TASKS_DIR" ]]; then
+    TASKS_DIR="$CLI_TASKS_DIR"
+  fi
 
   # List mode
   if [[ "$LIST_ONLY" == true ]]; then
@@ -762,4 +768,6 @@ main() {
   exit 0
 }
 
-main "$@"
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+  main "$@"
+fi

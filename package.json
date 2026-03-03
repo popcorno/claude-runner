@@ -13,6 +13,9 @@
     "claude-code",
     "task-runner"
   ],
+  "scripts": {
+    "test": "bats --recursive tests/"
+  },
   "license": "MIT",
   "repository": {
     "type": "git",
