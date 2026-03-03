@@ -141,14 +141,14 @@ validate_frontmatter() {
     priority)
       case "$value" in
         high|medium|low) echo "$value" ;;
-        *) log_warn "Invalid priority '$value', using default '$default'"
+        *) log_warn "Invalid priority '$value', using default '$default'" >&2
            echo "$default" ;;
       esac
       ;;
     skip-tests)
       case "$value" in
         true|false) echo "$value" ;;
-        *) log_warn "Invalid skip-tests '$value', using default '$default'"
+        *) log_warn "Invalid skip-tests '$value', using default '$default'" >&2
            echo "$default" ;;
       esac
       ;;
@@ -156,7 +156,7 @@ validate_frontmatter() {
       case "$value" in
         opus|sonnet|haiku|opusplan) echo "$value" ;;
         claude-*|anthropic.*) echo "$value" ;;
-        *) log_warn "Invalid model '$value', using default '$default'"
+        *) log_warn "Invalid model '$value', using default '$default'" >&2
            echo "$default" ;;
       esac
       ;;
@@ -773,17 +773,17 @@ main() {
     exit 0
   fi
 
+  # Dry run mode (collect_tasks is called inside dry_run)
+  if [[ "$DRY_RUN" == true ]]; then
+    dry_run "$TASKS_DIR"
+    exit 0
+  fi
+
   # Collect tasks
   collect_tasks "$TASKS_DIR"
 
   if [[ ${#SORTED_TASKS[@]} -eq 0 ]]; then
     log_info "No open tasks found in $TASKS_DIR"
-    exit 0
-  fi
-
-  # Dry run mode
-  if [[ "$DRY_RUN" == true ]]; then
-    dry_run "$TASKS_DIR"
     exit 0
   fi
 
