@@ -347,6 +347,13 @@ format_time() {
   fi
 }
 
+# ── Round cost to 4 decimal places ───────────────────────────
+round_cost() {
+  local cost="$1"
+  [[ -z "$cost" ]] && return
+  printf "%.4f" "$cost"
+}
+
 # ── Format cost for display ──────────────────────────────────
 format_cost() {
   local cost="$1"
@@ -546,7 +553,7 @@ IMPORTANT: Do not modify, move, or delete task files in the tasks/ directory. Ta
   if [[ $claude_exit -ne 0 ]]; then
     local elapsed=$(( $(date +%s) - start_time ))
     log_error "Claude exited with code $claude_exit"
-    [[ -n "$total_cost" ]] && set_frontmatter_field "$task_file" "cost" "$total_cost"
+    [[ -n "$total_cost" ]] && set_frontmatter_field "$task_file" "cost" "$(round_cost "$total_cost")"
     mark_task_failed "$task_file"
     record_result "$task_name" "$model" "error" "$(format_time $elapsed)" "claude exit $claude_exit" "$total_cost"
     return 1
@@ -575,7 +582,7 @@ IMPORTANT: Do not modify, move, or delete task files in the tasks/ directory. Ta
         git clean -fd 2>/dev/null || true
 
         # Move task to failed
-        [[ -n "$total_cost" ]] && set_frontmatter_field "$task_file" "cost" "$total_cost"
+        [[ -n "$total_cost" ]] && set_frontmatter_field "$task_file" "cost" "$(round_cost "$total_cost")"
         mark_task_failed "$task_file"
 
         record_result "$task_name" "$model" "rollback" "$(format_time $elapsed)" "" "$total_cost"
@@ -631,7 +638,7 @@ IMPORTANT: Do not modify, move, or delete task files in the tasks/ directory. Ta
   # Commit
   if [[ "$AUTO_COMMIT" == true ]]; then
     # Mark task as done (move or update status)
-    [[ -n "$total_cost" ]] && set_frontmatter_field "$task_file" "cost" "$total_cost"
+    [[ -n "$total_cost" ]] && set_frontmatter_field "$task_file" "cost" "$(round_cost "$total_cost")"
     mark_task_done "$task_file"
 
     # Build commit message
@@ -645,7 +652,7 @@ IMPORTANT: Do not modify, move, or delete task files in the tasks/ directory. Ta
     }
     log_success "Committed: $commit_msg"
   else
-    [[ -n "$total_cost" ]] && set_frontmatter_field "$task_file" "cost" "$total_cost"
+    [[ -n "$total_cost" ]] && set_frontmatter_field "$task_file" "cost" "$(round_cost "$total_cost")"
     mark_task_done "$task_file"
     log_success "Done (auto-commit disabled)"
   fi
