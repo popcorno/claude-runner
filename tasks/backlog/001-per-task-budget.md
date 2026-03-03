@@ -1,5 +1,5 @@
 ---
-priority: medium
+priority: high
 model: sonnet
 ---
 
