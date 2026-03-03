@@ -4,6 +4,35 @@ CLI tool for automated sequential task execution via [Claude Code](https://docs.
 
 Define your tasks as markdown files, and `claude-runner` will execute them one by one — running Claude with a clean context for each task, testing, retrying on failure, and committing results automatically.
 
+## TL;DR
+
+```bash
+# Install
+npm install -g github:popcorno/claude-runner
+
+# Create task directories
+mkdir -p tasks/{open,done,failed}
+
+# Create a task
+cat > tasks/open/001-my-task.md << 'EOF'
+# Add hello world endpoint
+
+Create a GET /hello endpoint in src/app.ts that returns "Hello, World!".
+Add a test in src/app.test.ts.
+EOF
+
+# Run
+claude-runner
+```
+
+That's it. Claude executes each task, runs tests, retries on failure, commits on success. Done tasks go to `tasks/done/`, failed to `tasks/failed/`.
+
+**Config** (optional): create `claude-runner.config.json` to set model, test command, retries, etc.
+
+**Skills**: copy `skills/*` to `.claude/skills/` — then use `/create-task`, `/plan-tasks`, `/retry-failed` in Claude Code.
+
+---
+
 ## Installation
 
 ### From GitHub (npm)
