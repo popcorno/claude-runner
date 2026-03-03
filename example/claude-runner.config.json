@@ -10,5 +10,6 @@
   "maxRetries": 2,
   "systemPrompt": "You are working on a TypeScript project with strict mode. Follow existing code patterns and conventions.",
   "stopOnError": true,
-  "allowDangerousMode": true
+  "allowDangerousMode": true,
+  "language": "en"
 }

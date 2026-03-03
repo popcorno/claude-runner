@@ -127,6 +127,45 @@ get_task_title() {
   get_task_body "$file" | awk '/^# / { sub(/^# */, ""); print; exit }'
 }
 
+# ── Validate frontmatter field values ───────────────────────
+# Returns validated value or default. Warns on invalid values.
+# Usage: validated=$(validate_frontmatter "priority" "$raw_value" "medium")
+validate_frontmatter() {
+  local field="$1"
+  local value="$2"
+  local default="$3"
+
+  [[ -z "$value" ]] && { echo "$default"; return 0; }
+
+  case "$field" in
+    priority)
+      case "$value" in
+        high|medium|low) echo "$value" ;;
+        *) log_warn "Invalid priority '$value', using default '$default'"
+           echo "$default" ;;
+      esac
+      ;;
+    skip-tests)
+      case "$value" in
+        true|false) echo "$value" ;;
+        *) log_warn "Invalid skip-tests '$value', using default '$default'"
+           echo "$default" ;;
+      esac
+      ;;
+    model)
+      case "$value" in
+        opus|sonnet|haiku|opusplan) echo "$value" ;;
+        claude-*|anthropic.*) echo "$value" ;;
+        *) log_warn "Invalid model '$value', using default '$default'"
+           echo "$default" ;;
+      esac
+      ;;
+    *)
+      echo "$value"
+      ;;
+  esac
+}
+
 # ── Config loading ───────────────────────────────────────────
 load_config() {
   local config_file=""
@@ -247,7 +286,7 @@ collect_tasks() {
 
     local priority
     priority=$(get_frontmatter_value "$file" "priority")
-    [[ -z "$priority" ]] && priority="medium"
+    priority=$(validate_frontmatter "priority" "$priority" "medium")
 
     case "$priority" in
       high)   high+=("$file") ;;
@@ -300,6 +339,45 @@ move_task() {
   fi
 }
 
+# ── Update frontmatter status field ──────────────────────────
+# Handles three cases:
+#   1. File has "status: open" → replace with "status: done"
+#   2. File has frontmatter but no status field → insert after opening ---
+#   3. File has no frontmatter → prepend frontmatter block with status
+set_frontmatter_status() {
+  local file="$1"
+  local new_status="$2"
+
+  [[ -f "$file" ]] || return 0
+
+  local sed_i=(-i)
+  [[ "$OSTYPE" == "darwin"* ]] && sed_i=(-i '')
+
+  # Case 1: file already has a status field in frontmatter
+  if grep -q '^status:' "$file"; then
+    sed "${sed_i[@]}" "s/^status:.*$/status: $new_status/" "$file"
+    return 0
+  fi
+
+  local tmp
+  tmp=$(mktemp)
+
+  # Case 2: file has frontmatter (starts with ---) but no status field
+  if head -1 "$file" | grep -q '^---$'; then
+    awk -v status="$new_status" '
+      /^---$/ && !done { print; print "status: " status; done=1; next }
+      { print }
+    ' "$file" > "$tmp"
+    mv "$tmp" "$file"
+    return 0
+  fi
+
+  # Case 3: no frontmatter at all — prepend it
+  printf '%s\n' "---" "status: $new_status" "---" > "$tmp"
+  cat "$file" >> "$tmp"
+  mv "$tmp" "$file"
+}
+
 # ── Mark task as done ────────────────────────────────────────
 mark_task_done() {
   local task_file="$1"
@@ -307,13 +385,7 @@ mark_task_done() {
   if [[ "$DONE_STRATEGY" == "move" ]]; then
     move_task "$task_file" "$DONE_DIR"
   else
-    if [[ -f "$task_file" ]]; then
-      if [[ "$OSTYPE" == "darwin"* ]]; then
-        sed -i '' 's/^status: open/status: done/' "$task_file"
-      else
-        sed -i 's/^status: open/status: done/' "$task_file"
-      fi
-    fi
+    set_frontmatter_status "$task_file" "done"
   fi
 }
 
@@ -363,12 +435,12 @@ run_task() {
 
   local model skip_tests commit_msg priority
   model=$(get_frontmatter_value "$task_file" "model")
-  [[ -z "$model" ]] && model="$DEFAULT_MODEL"
+  model=$(validate_frontmatter "model" "$model" "$DEFAULT_MODEL")
   skip_tests=$(get_frontmatter_value "$task_file" "skip-tests")
-  [[ -z "$skip_tests" ]] && skip_tests="false"
+  skip_tests=$(validate_frontmatter "skip-tests" "$skip_tests" "false")
   commit_msg=$(get_frontmatter_value "$task_file" "commit-message")
   priority=$(get_frontmatter_value "$task_file" "priority")
-  [[ -z "$priority" ]] && priority="medium"
+  priority=$(validate_frontmatter "priority" "$priority" "medium")
 
   echo ""
   echo "${BOLD}═══════════════════════════════════════${RESET}"
@@ -383,6 +455,16 @@ run_task() {
   # Build prompt
   local body
   body=$(get_task_body "$task_file")
+
+  # Skip empty tasks
+  local body_trimmed="${body//[$'\t\n\r ']}"
+  if [[ -z "$body_trimmed" ]]; then
+    log_warn "Empty task body: $task_file — skipping"
+    local elapsed=$(( $(date +%s) - start_time ))
+    mark_task_done "$task_file"
+    record_result "$task_name" "$model" "skipped" "$(format_time $elapsed)" "empty task"
+    return 0
+  fi
 
   local prompt=""
   if [[ -n "$SYSTEM_PROMPT" ]]; then
@@ -450,14 +532,22 @@ IMPORTANT: Do not modify, move, or delete task files in the tasks/ directory. Ta
       log_warn "Tests failed (attempt $retries/$MAX_RETRIES), asking Claude to fix..."
       log_verbose "$test_output"
 
-      local fix_prompt="The tests failed with the following output. Please fix the code to make the tests pass.
+      local fix_prompt="REMINDER: You are working on the following task. You MUST follow ALL constraints from the original task:
+
+$body
+
+---
+
+The tests failed with the following output. Please fix the code to make the tests pass.
 
 Test command: $TEST_COMMAND
 
 Test output:
 \`\`\`
 $test_output
-\`\`\`"
+\`\`\`
+
+IMPORTANT: Do not modify, move, or delete task files in the tasks/ directory. Task lifecycle is managed by claude-runner automatically."
 
       if [[ "$VERBOSE" == true ]]; then
         echo "$fix_prompt" | claude -p - $model_flag $perm_flag || true
@@ -659,6 +749,11 @@ main() {
 
   # Single task mode
   if [[ -n "$SINGLE_TASK" ]]; then
+    # Resolve short filename against tasks directory
+    if [[ ! -f "$SINGLE_TASK" && -f "${TASKS_DIR}/${SINGLE_TASK}" ]]; then
+      SINGLE_TASK="${TASKS_DIR}/${SINGLE_TASK}"
+    fi
+
     if [[ ! -f "$SINGLE_TASK" ]]; then
       log_error "Task file not found: $SINGLE_TASK"
       exit 1

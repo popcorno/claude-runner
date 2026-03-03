@@ -130,3 +130,20 @@ teardown() {
   [ "$status" -eq 0 ]
   [[ "$output" == *"001"* ]]
 }
+
+@test "cli: --task resolves short filename against tasks dir" {
+  mkdir -p tasks/open
+  create_task "tasks/open/041-my-task.md" "" "# My task"
+
+  run bash "$SCRIPT" --task "041-my-task.md"
+  # Should find the file (may fail at claude execution, but not at "not found")
+  [[ "$output" != *"Task file not found"* ]]
+}
+
+@test "cli: --task short filename not found anywhere exits 1" {
+  mkdir -p tasks/open
+
+  run bash "$SCRIPT" --task "nonexistent-task.md"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"not found"* ]]
+}

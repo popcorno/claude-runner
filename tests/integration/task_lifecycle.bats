@@ -75,6 +75,34 @@ teardown() {
   [ -f "task.md" ]
 }
 
+@test "mark_task_done: status strategy adds status when field missing from frontmatter" {
+  DONE_STRATEGY="status"
+  create_task "task.md" "priority: high" "# Title"
+
+  mark_task_done "task.md"
+
+  run grep "^status: done" "task.md"
+  [ "$status" -eq 0 ]
+  # Priority should be preserved
+  run grep "^priority: high" "task.md"
+  [ "$status" -eq 0 ]
+  [ -f "task.md" ]
+}
+
+@test "mark_task_done: status strategy adds frontmatter when file has none" {
+  DONE_STRATEGY="status"
+  printf '# Just a task\n\nDo something.\n' > "task.md"
+
+  mark_task_done "task.md"
+
+  run grep "^status: done" "task.md"
+  [ "$status" -eq 0 ]
+  # Original content should be preserved
+  run grep "^# Just a task" "task.md"
+  [ "$status" -eq 0 ]
+  [ -f "task.md" ]
+}
+
 # ── mark_task_failed: move strategy ──────────────────────
 
 @test "mark_task_failed: move strategy moves to FAILED_DIR" {

@@ -80,6 +80,20 @@ teardown() {
   [[ "$output" == *"Body text here."* ]]
 }
 
+@test "get_task_body: empty file returns empty string" {
+  printf '' > "empty.md"
+  run get_task_body "empty.md"
+  [ "$status" -eq 0 ]
+  [ "$output" = "" ]
+}
+
+@test "get_task_body: frontmatter-only file returns empty string" {
+  printf -- '---\npriority: high\n---\n' > "fmonly.md"
+  run get_task_body "fmonly.md"
+  [ "$status" -eq 0 ]
+  [ "$output" = "" ]
+}
+
 # ── get_task_title ─────────────────────────────────────────
 
 @test "get_task_title: standard # Title" {
@@ -101,4 +115,63 @@ teardown() {
   run get_task_title "task.md"
   [ "$status" -eq 0 ]
   [ "$output" = "My Task Title" ]
+}
+
+# ── validate_frontmatter ──────────────────────────────────
+
+@test "validate_frontmatter: valid priority passes through" {
+  run validate_frontmatter "priority" "high" "medium"
+  [ "$status" -eq 0 ]
+  [ "$output" = "high" ]
+}
+
+@test "validate_frontmatter: invalid priority returns default with warning" {
+  run validate_frontmatter "priority" "[invalid" "medium"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"medium"* ]]
+  [[ "$output" == *"Invalid priority"* ]]
+}
+
+@test "validate_frontmatter: empty value returns default" {
+  run validate_frontmatter "priority" "" "medium"
+  [ "$status" -eq 0 ]
+  [ "$output" = "medium" ]
+}
+
+@test "validate_frontmatter: valid skip-tests passes through" {
+  run validate_frontmatter "skip-tests" "true" "false"
+  [ "$status" -eq 0 ]
+  [ "$output" = "true" ]
+}
+
+@test "validate_frontmatter: invalid skip-tests returns default with warning" {
+  run validate_frontmatter "skip-tests" "yes" "false"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"false"* ]]
+  [[ "$output" == *"Invalid skip-tests"* ]]
+}
+
+@test "validate_frontmatter: valid model aliases pass through" {
+  run validate_frontmatter "model" "opus" "sonnet"
+  [ "$status" -eq 0 ]
+  [ "$output" = "opus" ]
+}
+
+@test "validate_frontmatter: full model ID passes through" {
+  run validate_frontmatter "model" "claude-sonnet-4-20250514" "sonnet"
+  [ "$status" -eq 0 ]
+  [ "$output" = "claude-sonnet-4-20250514" ]
+}
+
+@test "validate_frontmatter: invalid model returns default with warning" {
+  run validate_frontmatter "model" "gpt-4" "sonnet"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"sonnet"* ]]
+  [[ "$output" == *"Invalid model"* ]]
+}
+
+@test "validate_frontmatter: unknown field passes through unchanged" {
+  run validate_frontmatter "commit-message" "feat: something" "default"
+  [ "$status" -eq 0 ]
+  [ "$output" = "feat: something" ]
 }

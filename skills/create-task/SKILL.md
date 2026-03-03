@@ -13,12 +13,18 @@ You are creating a task file for the claude-runner task runner.
 2. Ask the user what the task should do if they haven't described it already
 3. Determine the next task number by listing existing files in the tasks open directory (default `./tasks/open/`). Use zero-padded 3-digit prefix (001, 002, 003...). If the open directory has `003-xxx.md` as the highest, the next is `004`. Also check `./tasks/done/` and `./tasks/failed/` to avoid number collisions
 4. Generate a short kebab-case slug from the task title (e.g., "Add user authentication" → `add-user-auth`)
-5. Create the task file with this format:
+5. Choose the model based on task complexity:
+   - **haiku** — trivial tasks: create a file, rename, add a simple constant, one-line changes
+   - **sonnet** — standard tasks: implement a function with tests, refactor a single module, add a route with validation
+   - **opus** — complex tasks: architectural changes, multi-file refactoring, designing new abstractions
+   Always specify the model explicitly in frontmatter. Default to `sonnet` when unsure.
+6. Check the `language` field in the config. If set (e.g., `"language": "ru"`), write the task title and description in that language. Code snippets, file paths, and technical terms remain in English.
+7. Create the task file with this format:
 
 ```markdown
 ---
 priority: medium
-model: <default from config or user's choice>
+model: <haiku|sonnet|opus — chosen by complexity>
 ---
 
 # <Task title>
