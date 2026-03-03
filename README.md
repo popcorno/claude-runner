@@ -258,19 +258,23 @@ claude-runner --verbose
 
 ## How It Works
 
-1. **Folder-based workflow** — tasks live in `tasks/open/`. On success, they are moved to `tasks/done/`. On failure (after exhausting retries), they are moved to `tasks/failed/`. This gives you a clear kanban-style view of task status.
+1. **Safety checks** — before running, the script verifies you're in a git repository and warns if the working tree has uncommitted changes (since rollback uses `git checkout . && git clean -fd` which would discard them).
 
-2. **Clean context per task** — each task runs as a separate `claude -p` invocation with no shared context between tasks. This ensures Claude focuses on one task at a time.
+2. **Folder-based workflow** — tasks live in `tasks/open/`. On success, they are moved to `tasks/done/`. On failure (after exhausting retries), they are moved to `tasks/failed/`. This gives you a clear kanban-style view of task status.
 
-3. **Priority-based ordering** — tasks are sorted by priority (`high` → `medium` → `low`), then by filename within the same priority.
+3. **Task list is frozen at start** — the list of open tasks is collected once at startup. New tasks added to `open/` during execution will NOT be picked up in the current run.
 
-4. **Automatic testing** — after Claude completes a task, the configured test command runs. If tests fail, Claude gets another chance to fix the code (up to `maxRetries` times).
+4. **Clean context per task** — each task runs as a separate `claude -p` invocation with no shared context between tasks. Prompts are piped via stdin to avoid OS argument length limits. Claude is instructed not to modify task files.
 
-5. **Rollback on failure** — if all retry attempts are exhausted, code changes are rolled back via `git checkout . && git clean -fd`, and the task file is moved to `tasks/failed/`.
+5. **Priority-based ordering** — tasks are sorted by priority (`high` → `medium` → `low`), then by filename within the same priority. Use numeric prefixes (`001-`, `002-`) to control execution order within the same priority.
 
-6. **Auto-commit** — on success, all changes (including the task file move) are staged and committed with either a custom or auto-generated message.
+6. **Automatic testing** — after Claude completes a task, the configured test command runs. If tests fail, Claude gets another chance to fix the code (up to `maxRetries` times).
 
-7. **Stop or continue** — when `stopOnError` is `true` (default), execution stops at the first failed task. Set it to `false` to skip failures and continue with remaining tasks.
+7. **Rollback on failure** — if all retry attempts are exhausted, code changes are rolled back via `git checkout . && git clean -fd`, and the task file is moved to `tasks/failed/`.
+
+8. **Auto-commit** — on success, all changes (including the task file move) are staged and committed with either a custom or auto-generated message. Pre-commit hooks run normally.
+
+9. **Stop or continue** — when `stopOnError` is `true` (default), execution stops at the first failed task. Set it to `false` to skip failures and continue with remaining tasks.
 
 ## Claude Code Skills
 
@@ -309,7 +313,7 @@ Each skill is a directory with a `SKILL.md` file following the Claude Code skill
 
 - **[Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code)** — the `claude` command must be available in PATH
 - **[jq](https://jqlang.github.io/jq/)** — for JSON config parsing (`brew install jq` / `apt install jq`)
-- **[git](https://git-scm.com/)** — for commits and rollbacks
+- **[git](https://git-scm.com/)** — project must be a git repository (for commits, rollbacks, and dirty tree detection)
 - **bash** 4.0+ — the script uses bash arrays and associative features
 
 ## License
