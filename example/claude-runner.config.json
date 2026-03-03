@@ -1,0 +1,14 @@
+{
+  "tasksDir": "./tasks/open",
+  "doneDir": "./tasks/done",
+  "failedDir": "./tasks/failed",
+  "doneStrategy": "move",
+  "defaultModel": "sonnet",
+  "testCommand": "npm test",
+  "autoCommit": true,
+  "commitPrefix": "feat",
+  "maxRetries": 2,
+  "systemPrompt": "You are working on a TypeScript project with strict mode. Follow existing code patterns and conventions.",
+  "stopOnError": true,
+  "allowDangerousMode": true
+}

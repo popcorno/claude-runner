@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(chmod +x /Users/sergey.bugaev/works/claude-runner/bin/claude-runner.sh)",
+      "Bash(bash -n /Users/sergey.bugaev/works/claude-runner/bin/claude-runner.sh)",
+      "Bash(/Users/sergey.bugaev/works/claude-runner/bin/claude-runner.sh --help)",
+      "Bash(/Users/sergey.bugaev/works/claude-runner/bin/claude-runner.sh --version)"
+    ]
+  }
+}
