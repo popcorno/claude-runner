@@ -29,7 +29,7 @@ That's it. Claude executes each task, runs tests, retries on failure, commits on
 
 **Config** (optional): create `claude-runner.config.json` to set model, test command, retries, etc.
 
-**Skills**: copy `skills/*` to `.claude/skills/` — then use `/create-task`, `/plan-tasks`, `/promote`, `/retry-failed` in Claude Code.
+**Skills**: copy `skills/*` to `.claude/skills/` — then use `/cr-task-create`, `/cr-task-plan`, `/cr-task-promote`, `/cr-task-retry` in Claude Code.
 
 ---
 
@@ -96,7 +96,7 @@ By default, `claude-runner` uses a folder-based workflow:
 
 ```
 tasks/
-  backlog/    ← ideas and drafts (not executed, use /promote to move to open)
+  backlog/    ← ideas and drafts (not executed, use /cr-task-promote to move to open)
   open/       ← tasks to execute
   done/       ← successfully completed tasks (moved automatically)
   failed/     ← tasks that failed after all retries (moved automatically)
@@ -329,19 +329,19 @@ Each skill is a directory with a `SKILL.md` file following the Claude Code skill
 
 | Skill | Description |
 |---|---|
-| `/create-task` | Create a single task interactively. Detects next number, generates frontmatter and detailed instructions |
-| `/plan-tasks` | Break down a high-level goal into a series of sequential tasks. Shows plan for approval before creating files |
-| `/promote` | Move backlog tasks to `open/` when they're ready for execution |
-| `/retry-failed` | Move failed tasks back to `open/` for another attempt |
+| `/cr-task-create` | Create a single task interactively. Detects next number, generates frontmatter and detailed instructions |
+| `/cr-task-plan` | Break down a high-level goal into a series of sequential tasks. Shows plan for approval before creating files |
+| `/cr-task-promote` | Move backlog tasks to `open/` when they're ready for execution |
+| `/cr-task-retry` | Move failed tasks back to `open/` for another attempt |
 
 ### Usage
 
 ```bash
 # In Claude Code:
-/create-task Add email validation to the User model
-/plan-tasks Implement full JWT authentication with login, register, and middleware
-/promote
-/retry-failed
+/cr-task-create Add email validation to the User model
+/cr-task-plan Implement full JWT authentication with login, register, and middleware
+/cr-task-promote
+/cr-task-retry
 ```
 
 ## Requirements

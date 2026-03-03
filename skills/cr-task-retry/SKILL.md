@@ -1,5 +1,5 @@
 ---
-name: retry-failed
+name: cr-task-retry
 description: Move failed tasks back to open for another attempt by claude-runner. Use when the user wants to retry tasks that previously failed.
 ---
 

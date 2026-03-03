@@ -1,5 +1,5 @@
 ---
-name: plan-tasks
+name: cr-task-plan
 description: Break down a high-level goal into a series of sequential tasks for claude-runner. Use when the user wants to plan a feature or large change as multiple runner tasks.
 ---
 

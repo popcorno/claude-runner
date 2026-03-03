@@ -1,5 +1,5 @@
 ---
-name: promote
+name: cr-task-promote
 description: Move backlog tasks to open for execution by claude-runner. Use when the user wants to promote ideas/drafts into ready-to-run tasks.
 ---
 

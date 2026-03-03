@@ -45,7 +45,7 @@ Tests use [bats-core](https://github.com/bats-core/bats-core). The script is sou
 
 Skills live in `skills/` and follow Claude Code skill format (directory with `SKILL.md`). Users copy them to `.claude/skills/` in their projects.
 
-Available: `/create-task`, `/plan-tasks`, `/promote`, `/retry-failed`
+Available: `/cr-task-create`, `/cr-task-plan`, `/cr-task-promote`, `/cr-task-retry`
 
 ## Directories
 

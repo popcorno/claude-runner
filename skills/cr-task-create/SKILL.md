@@ -1,5 +1,5 @@
 ---
-name: create-task
+name: cr-task-create
 description: Create a new task file for claude-runner. Use when the user wants to add a task to the runner queue.
 ---
 
