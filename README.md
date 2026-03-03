@@ -11,7 +11,7 @@ Define your tasks as markdown files, and `claude-runner` will execute them one b
 npm install -g github:popcorno/claude-runner
 
 # Create task directories
-mkdir -p tasks/{open,done,failed}
+mkdir -p tasks/{backlog,open,done,failed}
 
 # Create a task
 cat > tasks/open/001-my-task.md << 'EOF'
@@ -29,7 +29,7 @@ That's it. Claude executes each task, runs tests, retries on failure, commits on
 
 **Config** (optional): create `claude-runner.config.json` to set model, test command, retries, etc.
 
-**Skills**: copy `skills/*` to `.claude/skills/` — then use `/create-task`, `/plan-tasks`, `/retry-failed` in Claude Code.
+**Skills**: copy `skills/*` to `.claude/skills/` — then use `/create-task`, `/plan-tasks`, `/promote`, `/retry-failed` in Claude Code.
 
 ---
 
@@ -61,7 +61,7 @@ chmod +x /usr/local/bin/claude-runner
 **1. Create a tasks directory in your project:**
 
 ```bash
-mkdir -p tasks/{open,done,failed}
+mkdir -p tasks/{backlog,open,done,failed}
 ```
 
 **2. Add a task file** `tasks/open/001-add-feature.md`:
@@ -96,12 +96,13 @@ By default, `claude-runner` uses a folder-based workflow:
 
 ```
 tasks/
+  backlog/    ← ideas and drafts (not executed, use /promote to move to open)
   open/       ← tasks to execute
   done/       ← successfully completed tasks (moved automatically)
   failed/     ← tasks that failed after all retries (moved automatically)
 ```
 
-This keeps your task board clean — you can see at a glance what's pending, done, and broken.
+This keeps your task board clean — you can see at a glance what's planned, pending, done, and broken.
 
 Alternatively, set `"doneStrategy": "status"` to use the legacy mode where task status is tracked via a `status` field in YAML frontmatter (the file stays in place and gets `status: done` written into it).
 
@@ -114,6 +115,7 @@ Place `claude-runner.config.json` or `.claude-runner.json` in your project root.
 | `tasksDir` | string | `"./tasks/open"` | Directory containing open task files |
 | `doneDir` | string | `"./tasks/done"` | Directory for completed tasks |
 | `failedDir` | string | `"./tasks/failed"` | Directory for failed tasks |
+| `backlogDir` | string | `"./tasks/backlog"` | Directory for task ideas and drafts (not executed) |
 | `doneStrategy` | `"move"` \| `"status"` | `"move"` | How to mark tasks as done (see below) |
 | `defaultModel` | string | `"opus"` | Default Claude model (see Model Aliases) |
 | `testCommand` | string | `"npm test"` | Command to run tests after each task |
@@ -221,6 +223,7 @@ Set the model per-task in frontmatter or globally via `defaultModel` in config.
 | `--from <prefix>` | Start from task matching prefix (skip earlier tasks) |
 | `--verbose` | Verbose output |
 | `--list` | List open tasks and exit |
+| `--list-backlog` | List backlog tasks and exit |
 | `--version` | Show version |
 | `--help` | Show help |
 
@@ -328,6 +331,7 @@ Each skill is a directory with a `SKILL.md` file following the Claude Code skill
 |---|---|
 | `/create-task` | Create a single task interactively. Detects next number, generates frontmatter and detailed instructions |
 | `/plan-tasks` | Break down a high-level goal into a series of sequential tasks. Shows plan for approval before creating files |
+| `/promote` | Move backlog tasks to `open/` when they're ready for execution |
 | `/retry-failed` | Move failed tasks back to `open/` for another attempt |
 
 ### Usage
@@ -336,6 +340,7 @@ Each skill is a directory with a `SKILL.md` file following the Claude Code skill
 # In Claude Code:
 /create-task Add email validation to the User model
 /plan-tasks Implement full JWT authentication with login, register, and middleware
+/promote
 /retry-failed
 ```
 

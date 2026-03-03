@@ -2,6 +2,7 @@
   "tasksDir": "./tasks/open",
   "doneDir": "./tasks/done",
   "failedDir": "./tasks/failed",
+  "backlogDir": "./tasks/backlog",
   "doneStrategy": "move",
   "defaultModel": "sonnet",
   "testCommand": "npm test",

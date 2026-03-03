@@ -27,6 +27,7 @@ fi
 TASKS_DIR="./tasks/open"
 DONE_DIR="./tasks/done"
 FAILED_DIR="./tasks/failed"
+BACKLOG_DIR="./tasks/backlog"
 DONE_STRATEGY="move"
 DEFAULT_MODEL="opus"
 TEST_COMMAND="npm test"
@@ -44,6 +45,7 @@ DRY_RUN=false
 FROM_TASK=""
 VERBOSE=false
 LIST_ONLY=false
+LIST_BACKLOG=false
 
 # ── Report data ──────────────────────────────────────────────
 declare -a REPORT_NAMES=()
@@ -77,6 +79,7 @@ ${BOLD}OPTIONS${RESET}
   ${BOLD}--from <prefix>${RESET}     Start from task matching prefix (skip earlier ones)
   ${BOLD}--verbose${RESET}           Verbose output
   ${BOLD}--list${RESET}              List open tasks and exit
+  ${BOLD}--list-backlog${RESET}      List backlog tasks and exit
   ${BOLD}--version${RESET}           Show version
   ${BOLD}--help${RESET}              Show this help
 
@@ -188,6 +191,7 @@ load_config() {
   val=$(jq -r '.tasksDir | values' "$config_file" 2>/dev/null) && [[ -n "$val" ]] && TASKS_DIR="$val"
   val=$(jq -r '.doneDir | values' "$config_file" 2>/dev/null) && [[ -n "$val" ]] && DONE_DIR="$val"
   val=$(jq -r '.failedDir | values' "$config_file" 2>/dev/null) && [[ -n "$val" ]] && FAILED_DIR="$val"
+  val=$(jq -r '.backlogDir | values' "$config_file" 2>/dev/null) && [[ -n "$val" ]] && BACKLOG_DIR="$val"
   val=$(jq -r '.doneStrategy | values' "$config_file" 2>/dev/null) && [[ -n "$val" ]] && DONE_STRATEGY="$val"
   val=$(jq -r '.defaultModel | values' "$config_file" 2>/dev/null) && [[ -n "$val" ]] && DEFAULT_MODEL="$val"
   val=$(jq -r '.testCommand | values' "$config_file" 2>/dev/null) && [[ -n "$val" ]] && TEST_COMMAND="$val"
@@ -217,6 +221,8 @@ parse_args() {
         VERBOSE=true; shift ;;
       --list)
         LIST_ONLY=true; shift ;;
+      --list-backlog)
+        LIST_BACKLOG=true; shift ;;
       --version)
         echo "claude-runner v${VERSION}"; exit 0 ;;
       --help|-h)
@@ -744,6 +750,16 @@ main() {
   # List mode
   if [[ "$LIST_ONLY" == true ]]; then
     list_tasks "$TASKS_DIR"
+    exit 0
+  fi
+
+  # List backlog mode
+  if [[ "$LIST_BACKLOG" == true ]]; then
+    if [[ ! -d "$BACKLOG_DIR" ]]; then
+      log_info "No backlog directory: $BACKLOG_DIR"
+      exit 0
+    fi
+    list_tasks "$BACKLOG_DIR"
     exit 0
   fi
 

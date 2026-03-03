@@ -14,6 +14,7 @@ Single bash script (`bin/claude-runner.sh`) — no dependencies beyond bash 4+, 
 - `validate_frontmatter()` — validates priority/model/skip-tests values, returns default on invalid (warnings go to stderr)
 - `set_frontmatter_status()` — updates frontmatter `status` field (for `doneStrategy: "status"`)
 - `mark_task_done()` / `mark_task_failed()` — move file or update status depending on strategy
+- `list_tasks()` — display tasks from a directory (used for `--list` and `--list-backlog`)
 
 ### Flow
 
@@ -43,6 +44,15 @@ Tests use [bats-core](https://github.com/bats-core/bats-core). The script is sou
 ## Skills
 
 Skills live in `skills/` and follow Claude Code skill format (directory with `SKILL.md`). Users copy them to `.claude/skills/` in their projects.
+
+Available: `/create-task`, `/plan-tasks`, `/promote`, `/retry-failed`
+
+## Directories
+
+- `tasksDir` (default `./tasks/open`) — tasks for execution
+- `backlogDir` (default `./tasks/backlog`) — ideas/drafts, not executed by runner
+- `doneDir` (default `./tasks/done`) — completed tasks
+- `failedDir` (default `./tasks/failed`) — failed tasks
 
 ## Conventions
 

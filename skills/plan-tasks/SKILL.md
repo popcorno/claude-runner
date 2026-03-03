@@ -26,7 +26,7 @@ You are a technical architect breaking down a high-level goal into a sequence of
 
 ## Numbering and naming
 
-- Start numbering from the next available number (check open/, done/, failed/ to avoid collisions)
+- Start numbering from the next available number (check open/, done/, failed/, and backlog/ to avoid collisions)
 - Use zero-padded 3-digit prefixes: 001, 002, 003...
 - Use short kebab-case slugs: `003-add-user-model.md`
 
