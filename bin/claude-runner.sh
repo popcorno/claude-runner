@@ -53,9 +53,14 @@ declare -a REPORT_MODELS=()
 declare -a REPORT_STATUSES=()
 declare -a REPORT_TIMES=()
 declare -a REPORT_NOTES=()
+declare -a REPORT_COSTS=()
 TASKS_DONE=0
 TASKS_TOTAL=0
 HAD_ERRORS=false
+
+# ── Parsed Claude output globals ─────────────────────────────
+PARSED_RESULT=""
+PARSED_COST_USD=""
 
 # ── Logging ──────────────────────────────────────────────────
 log_info()    { echo "${BLUE}${BOLD}ℹ${RESET} $*"; }
@@ -64,6 +69,22 @@ log_warn()    { echo "${YELLOW}${BOLD}⚠${RESET} $*"; }
 log_error()   { echo "${RED}${BOLD}❌${RESET} $*"; }
 log_verbose() { [[ "$VERBOSE" == true ]] && echo "${DIM}  $*${RESET}" || true; }
 log_step()    { echo "${CYAN}${BOLD}▶${RESET} $*"; }
+
+# ── Parse Claude CLI JSON output ─────────────────────────────
+# Sets PARSED_RESULT (text to display) and PARSED_COST_USD globals.
+# Falls back to raw output if JSON parsing fails.
+parse_claude_output() {
+  local json="$1"
+  PARSED_RESULT=""
+  PARSED_COST_USD=""
+
+  if echo "$json" | jq -e 'type == "object"' >/dev/null 2>&1; then
+    PARSED_RESULT=$(echo "$json" | jq -r '.result // ""')
+    PARSED_COST_USD=$(echo "$json" | jq -r '.cost_usd | values' 2>/dev/null || echo "")
+  else
+    PARSED_RESULT="$json"
+  fi
+}
 
 # ── Usage ────────────────────────────────────────────────────
 usage() {
@@ -326,6 +347,16 @@ format_time() {
   fi
 }
 
+# ── Format cost for display ──────────────────────────────────
+format_cost() {
+  local cost="$1"
+  if [[ -z "$cost" ]]; then
+    echo "-"
+  else
+    printf "\$%.4f" "$cost"
+  fi
+}
+
 # ── Move task file to target directory ───────────────────────
 move_task() {
   local task_file="$1"
@@ -345,23 +376,24 @@ move_task() {
   fi
 }
 
-# ── Update frontmatter status field ──────────────────────────
+# ── Set a field in frontmatter ────────────────────────────────
 # Handles three cases:
-#   1. File has "status: open" → replace with "status: done"
-#   2. File has frontmatter but no status field → insert after opening ---
-#   3. File has no frontmatter → prepend frontmatter block with status
-set_frontmatter_status() {
+#   1. File already has the field → replace it
+#   2. File has frontmatter but not this field → insert after opening ---
+#   3. File has no frontmatter → prepend frontmatter block with field
+set_frontmatter_field() {
   local file="$1"
-  local new_status="$2"
+  local field="$2"
+  local value="$3"
 
   [[ -f "$file" ]] || return 0
 
   local sed_i=(-i)
   [[ "$OSTYPE" == "darwin"* ]] && sed_i=(-i '')
 
-  # Case 1: file already has a status field in frontmatter
-  if grep -q '^status:' "$file"; then
-    sed "${sed_i[@]}" "s/^status:.*$/status: $new_status/" "$file"
+  # Case 1: file already has this field in frontmatter
+  if grep -q "^${field}:" "$file"; then
+    sed "${sed_i[@]}" "s/^${field}:.*$/${field}: ${value}/" "$file"
     return 0
   fi
 
@@ -369,10 +401,10 @@ set_frontmatter_status() {
   tmp=$(mktemp)
   trap "rm -f '$tmp'" RETURN
 
-  # Case 2: file has frontmatter (starts with ---) but no status field
+  # Case 2: file has frontmatter (starts with ---) but no field
   if head -1 "$file" | grep -q '^---$'; then
-    awk -v status="$new_status" '
-      /^---$/ && !done { print; print "status: " status; done=1; next }
+    awk -v field="$field" -v value="$value" '
+      /^---$/ && !done { print; print field ": " value; done=1; next }
       { print }
     ' "$file" > "$tmp"
     mv "$tmp" "$file"
@@ -380,9 +412,14 @@ set_frontmatter_status() {
   fi
 
   # Case 3: no frontmatter at all — prepend it
-  printf '%s\n' "---" "status: $new_status" "---" > "$tmp"
+  printf '%s\n' "---" "${field}: ${value}" "---" > "$tmp"
   cat "$file" >> "$tmp"
   mv "$tmp" "$file"
+}
+
+# ── Update frontmatter status field ──────────────────────────
+set_frontmatter_status() {
+  set_frontmatter_field "$1" "status" "$2"
 }
 
 # ── Mark task as done ────────────────────────────────────────
@@ -492,18 +529,26 @@ IMPORTANT: Do not modify, move, or delete task files in the tasks/ directory. Ta
   log_step "Running Claude ($model)..."
   log_verbose "Prompt length: ${#prompt} chars"
 
+  local total_cost=""
   local claude_exit=0
+  local raw_output
+  raw_output=$(echo "$prompt" | claude -p - $model_flag $perm_flag --output-format json 2>&1) || claude_exit=$?
+
+  parse_claude_output "$raw_output"
+  [[ -n "$PARSED_COST_USD" ]] && total_cost="$PARSED_COST_USD"
+
   if [[ "$VERBOSE" == true ]]; then
-    echo "$prompt" | claude -p - $model_flag $perm_flag || claude_exit=$?
+    echo "$PARSED_RESULT"
   else
-    echo "$prompt" | claude -p - $model_flag $perm_flag 2>&1 | tail -20 || claude_exit=$?
+    echo "$PARSED_RESULT" | tail -20
   fi
 
   if [[ $claude_exit -ne 0 ]]; then
     local elapsed=$(( $(date +%s) - start_time ))
     log_error "Claude exited with code $claude_exit"
+    [[ -n "$total_cost" ]] && set_frontmatter_field "$task_file" "cost" "$total_cost"
     mark_task_failed "$task_file"
-    record_result "$task_name" "$model" "error" "$(format_time $elapsed)" "claude exit $claude_exit"
+    record_result "$task_name" "$model" "error" "$(format_time $elapsed)" "claude exit $claude_exit" "$total_cost"
     return 1
   fi
 
@@ -530,9 +575,10 @@ IMPORTANT: Do not modify, move, or delete task files in the tasks/ directory. Ta
         git clean -fd 2>/dev/null || true
 
         # Move task to failed
+        [[ -n "$total_cost" ]] && set_frontmatter_field "$task_file" "cost" "$total_cost"
         mark_task_failed "$task_file"
 
-        record_result "$task_name" "$model" "rollback" "$(format_time $elapsed)" ""
+        record_result "$task_name" "$model" "rollback" "$(format_time $elapsed)" "" "$total_cost"
         return 1
       fi
 
@@ -556,10 +602,22 @@ $test_output
 
 IMPORTANT: Do not modify, move, or delete task files in the tasks/ directory. Task lifecycle is managed by claude-runner automatically."
 
+      local fix_output
+      fix_output=$(echo "$fix_prompt" | claude -p - $model_flag $perm_flag --output-format json 2>&1) || true
+
+      parse_claude_output "$fix_output"
+      if [[ -n "$PARSED_COST_USD" ]]; then
+        if [[ -z "$total_cost" ]]; then
+          total_cost="$PARSED_COST_USD"
+        else
+          total_cost=$(jq -n "$total_cost + $PARSED_COST_USD" 2>/dev/null || echo "$total_cost")
+        fi
+      fi
+
       if [[ "$VERBOSE" == true ]]; then
-        echo "$fix_prompt" | claude -p - $model_flag $perm_flag || true
+        echo "$PARSED_RESULT"
       else
-        echo "$fix_prompt" | claude -p - $model_flag $perm_flag 2>&1 | tail -20 || true
+        echo "$PARSED_RESULT" | tail -20
       fi
     done
   else
@@ -573,6 +631,7 @@ IMPORTANT: Do not modify, move, or delete task files in the tasks/ directory. Ta
   # Commit
   if [[ "$AUTO_COMMIT" == true ]]; then
     # Mark task as done (move or update status)
+    [[ -n "$total_cost" ]] && set_frontmatter_field "$task_file" "cost" "$total_cost"
     mark_task_done "$task_file"
 
     # Build commit message
@@ -586,11 +645,12 @@ IMPORTANT: Do not modify, move, or delete task files in the tasks/ directory. Ta
     }
     log_success "Committed: $commit_msg"
   else
+    [[ -n "$total_cost" ]] && set_frontmatter_field "$task_file" "cost" "$total_cost"
     mark_task_done "$task_file"
     log_success "Done (auto-commit disabled)"
   fi
 
-  record_result "$task_name" "$model" "done" "$(format_time $elapsed)" "$note"
+  record_result "$task_name" "$model" "done" "$(format_time $elapsed)" "$note" "$total_cost"
   return 0
 }
 
@@ -601,6 +661,7 @@ record_result() {
   REPORT_STATUSES+=("$3")
   REPORT_TIMES+=("$4")
   REPORT_NOTES+=("$5")
+  REPORT_COSTS+=("${6:-}")
 }
 
 # ── Print final report ──────────────────────────────────────
@@ -611,13 +672,16 @@ print_report() {
   echo "${BOLD}═══════════════════════════════════════${RESET}"
 
   local i
+  local total_cost=""
   for (( i = 0; i < ${#REPORT_NAMES[@]}; i++ )); do
-    local icon name model status time_str note
+    local icon name model status time_str note cost cost_str
     name="${REPORT_NAMES[$i]}"
     model="${REPORT_MODELS[$i]}"
     status="${REPORT_STATUSES[$i]}"
     time_str="${REPORT_TIMES[$i]}"
     note="${REPORT_NOTES[$i]}"
+    cost="${REPORT_COSTS[$i]:-}"
+    cost_str=$(format_cost "$cost")
 
     case "$status" in
       done)     icon="${GREEN}✅${RESET}" ;;
@@ -629,11 +693,22 @@ print_report() {
     local extra=""
     [[ -n "$note" ]] && extra="  (${note})"
 
-    printf "  %s %-25s %-10s %s%s\n" "$icon" "$name" "$model" "$time_str" "$extra"
+    printf "  %s %-25s %-10s %-10s %s%s\n" "$icon" "$name" "$model" "$time_str" "$cost_str" "$extra"
+
+    if [[ -n "$cost" ]]; then
+      if [[ -z "$total_cost" ]]; then
+        total_cost="$cost"
+      else
+        total_cost=$(jq -n "$total_cost + $cost" 2>/dev/null || echo "$total_cost")
+      fi
+    fi
   done
 
+  local total_cost_str
+  total_cost_str=$(format_cost "$total_cost")
+
   echo "${BOLD}═══════════════════════════════════════${RESET}"
-  echo "  ${BOLD}Total: ${TASKS_DONE}/${TASKS_TOTAL} completed${RESET}"
+  echo "  ${BOLD}Total: ${TASKS_DONE}/${TASKS_TOTAL} completed | Cost: ${total_cost_str}${RESET}"
   echo "${BOLD}═══════════════════════════════════════${RESET}"
   echo ""
 }

@@ -33,9 +33,13 @@ load_script() {
   REPORT_STATUSES=()
   REPORT_TIMES=()
   REPORT_NOTES=()
+  REPORT_COSTS=()
   TASKS_DONE=0
   TASKS_TOTAL=0
   HAD_ERRORS=false
+
+  PARSED_RESULT=""
+  PARSED_COST_USD=""
 
   # Disable color for predictable test output
   RED="" GREEN="" YELLOW="" BLUE="" MAGENTA="" CYAN="" BOLD="" DIM="" RESET=""
