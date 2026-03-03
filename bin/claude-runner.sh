@@ -80,7 +80,7 @@ parse_claude_output() {
 
   if echo "$json" | jq -e 'type == "object"' >/dev/null 2>&1; then
     PARSED_RESULT=$(echo "$json" | jq -r '.result // ""')
-    PARSED_COST_USD=$(echo "$json" | jq -r '.cost_usd | values' 2>/dev/null || echo "")
+    PARSED_COST_USD=$(echo "$json" | jq -r '.total_cost_usd | values' 2>/dev/null || echo "")
   else
     PARSED_RESULT="$json"
   fi
