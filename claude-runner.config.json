@@ -1,0 +1,16 @@
+{
+  "tasksDir": "./tasks/open",
+  "doneDir": "./tasks/done",
+  "failedDir": "./tasks/failed",
+  "backlogDir": "./tasks/backlog",
+  "doneStrategy": "move",
+  "defaultModel": "sonnet",
+  "testCommand": "npm test",
+  "autoCommit": true,
+  "commitPrefix": "feat",
+  "maxRetries": 2,
+  "systemPrompt": "You are working on claude-runner, a bash CLI tool. Main script: bin/claude-runner.sh. Tests: bats-core (npm test). Read CLAUDE.md for conventions.",
+  "stopOnError": true,
+  "allowDangerousMode": true,
+  "language": "en"
+}
