@@ -6,7 +6,7 @@ set -euo pipefail
 #  task execution via Claude Code
 # ═══════════════════════════════════════
 
-VERSION="1.2.0"
+VERSION="1.3.0"
 
 # ── Color setup ──────────────────────────────────────────────
 if [[ -t 1 ]] && command -v tput &>/dev/null && [[ $(tput colors 2>/dev/null || echo 0) -ge 8 ]]; then
