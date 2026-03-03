@@ -3,7 +3,7 @@
 setup() {
   load '../test_helper'
   setup_tmpdir
-  ESTIMATE_SCRIPT="$PROJECT_ROOT/bin/estimate-cost.sh"
+  ESTIMATE_SCRIPT="$PROJECT_ROOT/skills/cr-task-create/estimate-cost.sh"
   mkdir -p done
 }
 

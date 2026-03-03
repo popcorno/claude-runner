@@ -18,7 +18,7 @@ You are creating a task file for the claude-runner task runner.
    - **sonnet** — standard tasks: implement a function with tests, refactor a single module, add a route with validation
    - **opus** — complex tasks: architectural changes, multi-file refactoring, designing new abstractions
    Always specify the model explicitly in frontmatter. Default to `sonnet` when unsure.
-6. Estimate the cost by running `bin/estimate-cost.sh --model <chosen-model> --done-dir <doneDir>` (use `doneDir` from config, default `./tasks/done`). If the script is not found or fails for any reason, skip this step silently — do not block task creation.
+6. Estimate the cost by running the `estimate-cost.sh` script bundled with this skill (in the same directory as this SKILL.md): `<skill-base-dir>/estimate-cost.sh --model <chosen-model> --done-dir <doneDir>` (use `doneDir` from config, default `./tasks/done`). If the script is not found or fails for any reason, skip this step silently — do not block task creation.
 7. Check the `language` field in the config. If set (e.g., `"language": "ru"`), write the task title and description in that language. Code snippets, file paths, and technical terms remain in English.
 8. Create the task file with this format:
 
@@ -26,7 +26,7 @@ You are creating a task file for the claude-runner task runner.
 ---
 priority: medium
 model: <haiku|sonnet|opus — chosen by complexity>
-estimated-cost: <output of bin/estimate-cost.sh, omit if script unavailable>
+estimated-cost: <output of estimate-cost.sh, omit if script unavailable>
 ---
 
 # <Task title>
