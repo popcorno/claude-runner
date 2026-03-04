@@ -19,7 +19,7 @@ You are a technical architect breaking down a high-level goal into a sequence of
 ## Task design principles
 
 - **Atomic** — each task does ONE thing well. Prefer many small tasks over few large ones
-- **Self-contained** — task description must include ALL context Claude needs. Reference specific file paths, existing patterns, and expected interfaces
+- **Self-contained** — task description must include ALL context Claude needs. Explore the codebase yourself to find exact file paths, existing patterns, function signatures, and relevant code — then include this context directly in the task description. The more concrete details you provide upfront, the less time the executing model spends on exploration and the fewer tokens it consumes
 - **Testable** — each task should leave the project in a state where tests pass
 - **Sequential** — later tasks can assume earlier tasks are committed. Mention expected files/interfaces from prior tasks explicitly (e.g., "The User model in src/models/user.ts has fields id, name, email")
 - **Safe** — each task should specify what files to touch and what NOT to touch

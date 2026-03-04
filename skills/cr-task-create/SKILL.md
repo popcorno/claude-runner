@@ -43,7 +43,7 @@ estimated-cost: <output of estimate-cost.sh, omit if script unavailable>
 ## Rules
 
 - The task description must be self-contained — Claude executing this task will have NO context from other tasks
-- Be specific about file paths, function names, and expected behavior
+- Be specific about file paths, function names, and expected behavior. Explore the codebase yourself to find exact paths, existing patterns, and relevant code — then include this context in the task description. The more concrete details you provide upfront, the less time the executing model spends on exploration and the fewer tokens it consumes
 - Include acceptance criteria so tests can verify the work
 - If the user gives a vague description or just an idea (not a concrete task), suggest creating it in the backlog directory (`backlogDir` from config, default `./tasks/backlog/`) instead of open. The backlog is for ideas and drafts that are not ready to be executed. Ask the user to confirm
 - Do NOT include `status` field in frontmatter when using `doneStrategy: "move"` (default) — file location IS the status
