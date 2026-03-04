@@ -648,14 +648,9 @@ IMPORTANT: Do not modify, move, or delete task files in the tasks/ directory. Ta
     log_verbose "Skipping tests (skip-tests: true)"
   fi
 
-  # Check that Claude actually made code changes
+  # Log if no code changes were made (task may already be complete)
   if ! has_code_changes "$task_file"; then
-    local elapsed=$(( $(date +%s) - start_time ))
-    log_error "No code changes detected — Claude did not modify any files"
-    [[ -n "$total_cost" ]] && set_frontmatter_field "$task_file" "cost" "$(round_cost "$total_cost")"
-    mark_task_failed "$task_file"
-    record_result "$task_name" "$model" "no-changes" "$(format_time $elapsed)" "" "$total_cost"
-    return 1
+    log_warn "No code changes detected — task may have already been completed"
   fi
 
   local elapsed=$(( $(date +%s) - start_time ))
