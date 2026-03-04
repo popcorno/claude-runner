@@ -56,11 +56,29 @@ In `validate_frontmatter()`:
 - When `stopOnError: true` (default): behavior is unchanged — runner stops at first failure regardless of dependencies
 - When `stopOnError: false`: dependencies add selective skipping — only tasks that depend on the failed one are skipped, others continue normally
 
+### 6. Update skills
+
+#### `skills/cr-task-create/SKILL.md` (and `.claude/skills/cr-task-create/SKILL.md`)
+
+- Add `depends-on` to the frontmatter template in the format section
+- When creating a task, check existing tasks in open/ and backlog/. If the new task logically depends on an existing one, suggest adding `depends-on` with the appropriate prefix(es)
+- Document the field in the Rules section: "Include `depends-on` if the task requires another task to complete first"
+
+#### `skills/cr-task-plan/SKILL.md` (and `.claude/skills/cr-task-plan/SKILL.md`)
+
+- When generating a chain of sequential tasks, automatically add `depends-on` to each task that relies on a prior task's output. For example, if task `003` builds on `002`'s result, set `depends-on: 002` in task `003`
+- Add `depends-on` to the task file format template
+- Update the "Task design principles" section: mention that dependencies should be declared explicitly via `depends-on`, not just implied by ordering
+
 ## Affected files
 
 - `bin/claude-runner.sh` — main implementation
 - `tests/unit/` — new tests for dependency parsing and validation
 - `tests/integration/` — new tests for dependency resolution during execution
+- `skills/cr-task-create/SKILL.md` — add `depends-on` to template and creation logic
+- `skills/cr-task-plan/SKILL.md` — auto-generate `depends-on` for sequential task chains
+- `.claude/skills/cr-task-create/SKILL.md` — mirror of skills/ copy
+- `.claude/skills/cr-task-plan/SKILL.md` — mirror of skills/ copy
 
 ## Acceptance criteria
 
@@ -69,6 +87,8 @@ In `validate_frontmatter()`:
 - Skipped-due-to-dependency tasks appear as "skipped" in the final report
 - Skipped tasks are also added to `FAILED_TASKS` so transitive dependencies are skipped too (if A→B→C and A fails, both B and C are skipped)
 - When `stopOnError: true`, behavior is unchanged
+- `cr-task-create` skill includes `depends-on` in its frontmatter template and suggests dependencies when relevant
+- `cr-task-plan` skill automatically adds `depends-on` when generating sequential task chains
 - All new functionality has bats tests
 - Existing tests continue to pass
 
@@ -77,3 +97,4 @@ In `validate_frontmatter()`:
 - Do not change existing frontmatter fields or their parsing
 - Do not change the default behavior when `depends-on` is not specified
 - Keep the dependency resolution simple — no circular dependency detection needed (tasks are sorted by priority/filename, so they execute in order)
+- `cr-task-promote` and `cr-task-retry` do not need changes (they only move files)
