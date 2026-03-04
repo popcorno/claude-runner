@@ -474,6 +474,21 @@ resolve_model_flag() {
   esac
 }
 
+# ── Check for code changes (excluding task file) ────────────
+has_code_changes() {
+  local task_file="$1"
+  local changes
+  changes=$(git diff --name-only 2>/dev/null; git ls-files --others --exclude-standard 2>/dev/null)
+  # Filter out the task file itself (convert to path relative to repo root)
+  local repo_root rel_task
+  repo_root=$(cd "$(git rev-parse --show-toplevel 2>/dev/null)" && pwd -P) || return 0
+  local abs_task
+  abs_task="$(cd "$(dirname "$task_file")" 2>/dev/null && pwd -P)/$(basename "$task_file")"
+  rel_task="${abs_task#$repo_root/}"
+  changes=$(echo "$changes" | grep -v "^${rel_task}$" | grep -v "^$" || true)
+  [[ -n "$changes" ]]
+}
+
 # ── Run a single task ────────────────────────────────────────
 run_task() {
   local task_file="$1"
@@ -524,6 +539,8 @@ run_task() {
 "
   fi
   prompt+="$body
+
+IMPORTANT: You MUST make actual code changes to complete this task. Do not just describe or plan changes — implement them by editing files. If the task cannot be completed, exit with a non-zero code rather than doing nothing.
 
 IMPORTANT: Do not modify, move, or delete task files in the tasks/ directory. Task lifecycle is managed by claude-runner automatically."
 
@@ -629,6 +646,16 @@ IMPORTANT: Do not modify, move, or delete task files in the tasks/ directory. Ta
     done
   else
     log_verbose "Skipping tests (skip-tests: true)"
+  fi
+
+  # Check that Claude actually made code changes
+  if ! has_code_changes "$task_file"; then
+    local elapsed=$(( $(date +%s) - start_time ))
+    log_error "No code changes detected — Claude did not modify any files"
+    [[ -n "$total_cost" ]] && set_frontmatter_field "$task_file" "cost" "$(round_cost "$total_cost")"
+    mark_task_failed "$task_file"
+    record_result "$task_name" "$model" "no-changes" "$(format_time $elapsed)" "" "$total_cost"
+    return 1
   fi
 
   local elapsed=$(( $(date +%s) - start_time ))
