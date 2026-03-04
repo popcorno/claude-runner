@@ -351,7 +351,7 @@ format_time() {
 round_cost() {
   local cost="$1"
   [[ -z "$cost" ]] && return
-  LC_ALL=C printf "%.4f" "$cost"
+  LC_ALL=C awk "BEGIN { printf \"%.4f\", $cost }"
 }
 
 # ── Format cost for display ──────────────────────────────────
@@ -360,7 +360,7 @@ format_cost() {
   if [[ -z "$cost" ]]; then
     echo "-"
   else
-    LC_ALL=C printf "\$%.4f" "$cost"
+    echo -n "\$$(LC_ALL=C awk "BEGIN { printf \"%.4f\", $cost }")"
   fi
 }
 
