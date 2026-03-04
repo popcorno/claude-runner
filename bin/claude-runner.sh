@@ -360,7 +360,7 @@ format_cost() {
   if [[ -z "$cost" ]]; then
     echo "-"
   else
-    printf "\$%.4f" "$cost"
+    LC_NUMERIC=C printf "\$%.4f" "$cost"
   fi
 }
 
