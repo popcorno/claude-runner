@@ -22,6 +22,7 @@ You are a technical architect breaking down a high-level goal into a sequence of
 - **Self-contained** — task description must include ALL context Claude needs. Explore the codebase yourself to find exact file paths, existing patterns, function signatures, and relevant code — then include this context directly in the task description. The more concrete details you provide upfront, the less time the executing model spends on exploration and the fewer tokens it consumes
 - **Testable** — each task should leave the project in a state where tests pass
 - **Sequential** — later tasks can assume earlier tasks are committed. Mention expected files/interfaces from prior tasks explicitly (e.g., "The User model in src/models/user.ts has fields id, name, email")
+- **Dependency-aware** — declare dependencies explicitly via the `depends-on` frontmatter field. When generating a chain of sequential tasks, add `depends-on` to each task that relies on a prior task's output (e.g., if task `003` builds on `002`'s result, set `depends-on: 002` in task `003`). This ensures dependent tasks are automatically skipped if their prerequisite fails, rather than wasting time on doomed executions
 - **Safe** — each task should specify what files to touch and what NOT to touch
 
 ## Numbering and naming
@@ -50,6 +51,7 @@ Read the `language` field from the project's config file (`claude-runner.config.
 ---
 priority: <high for foundational tasks, medium for features, low for cleanup>
 model: <haiku|sonnet|opus — chosen by complexity>
+depends-on: <comma-separated prefixes of prerequisite tasks, omit if none>
 ---
 
 # <Clear task title>

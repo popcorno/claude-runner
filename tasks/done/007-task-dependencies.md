@@ -1,4 +1,5 @@
 ---
+cost: 0.9536
 priority: high
 model: opus
 estimated-cost: 3.0000

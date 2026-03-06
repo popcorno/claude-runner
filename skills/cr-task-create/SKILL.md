@@ -27,6 +27,7 @@ You are creating a task file for the claude-runner task runner.
 priority: medium
 model: <haiku|sonnet|opus — chosen by complexity>
 estimated-cost: <output of estimate-cost.sh, omit if script unavailable>
+depends-on: <comma-separated task prefixes, omit if no dependencies>
 ---
 
 # <Task title>
@@ -45,6 +46,7 @@ estimated-cost: <output of estimate-cost.sh, omit if script unavailable>
 - The task description must be self-contained — Claude executing this task will have NO context from other tasks
 - Be specific about file paths, function names, and expected behavior. Explore the codebase yourself to find exact paths, existing patterns, and relevant code — then include this context in the task description. The more concrete details you provide upfront, the less time the executing model spends on exploration and the fewer tokens it consumes
 - Include acceptance criteria so tests can verify the work
+- Include `depends-on` if the task requires another task to complete first. Check existing tasks in open/ and backlog/ — if the new task logically depends on an existing one, add `depends-on` with the appropriate prefix(es) (e.g., `depends-on: 001, 003`). Values are the numeric prefix or full slug of the dependency task
 - If the user gives a vague description or just an idea (not a concrete task), suggest creating it in the backlog directory (`backlogDir` from config, default `./tasks/backlog/`) instead of open. The backlog is for ideas and drafts that are not ready to be executed. Ask the user to confirm
 - Do NOT include `status` field in frontmatter when using `doneStrategy: "move"` (default) — file location IS the status
 - Only include `status: open` if config has `doneStrategy: "status"`

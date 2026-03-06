@@ -151,6 +151,30 @@ get_task_title() {
   get_task_body "$file" | awk '/^# / { sub(/^# */, ""); print; exit }'
 }
 
+# ── Parse depends-on field ─────────────────────────────────
+# Returns newline-separated list of dependency prefixes/slugs, trimmed
+get_task_dependencies() {
+  local file="$1"
+  local raw
+  raw=$(get_frontmatter_value "$file" "depends-on")
+  [[ -z "$raw" ]] && return 0
+
+  # Split on commas, trim whitespace
+  echo "$raw" | tr ',' '\n' | while read -r dep; do
+    dep="${dep#"${dep%%[![:space:]]*}"}"   # trim leading
+    dep="${dep%"${dep##*[![:space:]]}"}"   # trim trailing
+    [[ -n "$dep" ]] && echo "$dep"
+  done
+}
+
+# ── Check if a task slug matches a dependency prefix ──────
+# Returns 0 (true) if the task slug starts with or equals the dep prefix
+task_matches_dep() {
+  local task_slug="$1"
+  local dep="$2"
+  [[ "$task_slug" == "$dep" || "$task_slug" == "$dep"-* ]]
+}
+
 # ── Validate frontmatter field values ───────────────────────
 # Returns validated value or default. Warns on invalid values.
 # Usage: validated=$(validate_frontmatter "priority" "$raw_value" "medium")
@@ -931,6 +955,9 @@ main() {
   local skip=true
   [[ -z "$FROM_TASK" ]] && skip=false
 
+  # Track failed task slugs for dependency resolution
+  declare -A FAILED_TASK_SLUGS=()
+
   for file in "${SORTED_TASKS[@]}"; do
     local name
     name=$(basename "$file" .md)
@@ -947,10 +974,38 @@ main() {
 
     TASKS_TOTAL=$((TASKS_TOTAL + 1))
 
+    # Check depends-on: skip if any dependency has failed
+    local dep_failed=""
+    local deps
+    deps=$(get_task_dependencies "$file")
+    if [[ -n "$deps" ]]; then
+      while IFS= read -r dep; do
+        for failed_slug in "${!FAILED_TASK_SLUGS[@]}"; do
+          if task_matches_dep "$failed_slug" "$dep"; then
+            dep_failed="$dep"
+            break 2
+          fi
+        done
+      done <<< "$deps"
+    fi
+
+    if [[ -n "$dep_failed" ]]; then
+      local dep_model
+      dep_model=$(get_frontmatter_value "$file" "model")
+      [[ -z "$dep_model" ]] && dep_model="$DEFAULT_MODEL"
+      log_warn "Skipping $name because dependency $dep_failed failed"
+      record_result "$name" "$dep_model" "skipped" "" "dependency $dep_failed failed"
+      FAILED_TASK_SLUGS["$name"]=1
+      mark_task_failed "$file"
+      HAD_ERRORS=true
+      continue
+    fi
+
     if run_task "$file"; then
       TASKS_DONE=$((TASKS_DONE + 1))
     else
       HAD_ERRORS=true
+      FAILED_TASK_SLUGS["$name"]=1
       if [[ "$STOP_ON_ERROR" == true ]]; then
         log_error "Stopping due to error (stopOnError: true)"
 
