@@ -16,21 +16,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install bats-core
+      - name: Install dependencies
         run: |
           if [[ "$RUNNER_OS" == "macOS" ]]; then
-            brew install bats-core
+            brew install bash bats-core jq
           else
-            sudo apt-get update && sudo apt-get install -y bats
+            sudo apt-get update && sudo apt-get install -y bats jq
           fi
 
-      - name: Install jq
+      - name: Configure git for tests
         run: |
-          if [[ "$RUNNER_OS" == "macOS" ]]; then
-            brew install jq
-          else
-            sudo apt-get install -y jq
-          fi
+          git config --global user.name "Test"
+          git config --global user.email "test@test.com"
 
       - name: Run tests
         run: bats --recursive tests/
