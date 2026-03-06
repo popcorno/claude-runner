@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(*)",
+      "Edit(*)",
+      "Read(*)",
+      "Write(*)",
+      "DeleteFile(*)",
+      "CreateFile(*)",
+      "WebFetch(*)",
+      "Task(*)",
+      "MCP(*)"
+    ]
+  }
+}
