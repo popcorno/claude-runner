@@ -1,6 +1,6 @@
 {
   "name": "claude-runner",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "description": "CLI tool for automated sequential task execution via Claude Code",
   "bin": {
     "claude-runner": "./bin/claude-runner.sh"
